@@ -56,6 +56,30 @@ class Dict {
     content[index] = entry;
   }
 
+  /// 如果有错误就不添加
+  Future<List<(int, String)>> addItems(String text) async {
+    final List<String> lines = LineSplitter.split(
+      text,
+    ).toList().where((l) => l.trim().isNotEmpty).toList();
+    final length = lines.length;
+    List<Entry> items = [];
+    List<(int, String)> err = [];
+    for (int i = 0; i < length; i++) {
+      try {
+        items.add(Entry.fromString(lines[i]));
+      } on FormatException catch (_) {
+        err.add((i + 1, lines[i]));
+      }
+    }
+    if (items.isNotEmpty && err.isEmpty) {
+      content.addAll(items);
+      reviewScheduler.add(num: items.length);
+      await saveContent();
+      saveProgress();
+    }
+    return err;
+  }
+
   Future<void> saveContent() async {
     final buffer = StringBuffer();
     buffer.writeln('$name|$author');

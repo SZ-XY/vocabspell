@@ -58,9 +58,11 @@ class ReviewScheduler {
     return -2; // 传入0的结果
   }
 
-  void add() {
-    pendingIndices.add(length);
-    length++;
+  void add({int num = 1}) {
+    for (int i = 0; i < num; i++) {
+      pendingIndices.add(length + i);
+    }
+    length += num;
   }
 
   void _insert(bool isCorrect) {

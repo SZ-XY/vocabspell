@@ -132,6 +132,17 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _addEntryFromStringPage() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const AddEntryFromString()),
+    );
+    if (!context.mounted) return;
+    if (result == true) {
+      _loadNextWord();
+    }
+  }
+
   Future<void> _newDictPage() async {
     final result = await Navigator.push<bool>(
       context,
@@ -310,6 +321,10 @@ class _HomePageState extends State<HomePage> {
             child: Text('修改'),
             onPressed: () => Navigator.pop(ctx, 'edit'),
           ),
+          SimpleDialogOption(
+            child: Text('从文本新建'),
+            onPressed: () => Navigator.pop(ctx, 'fromString'),
+          ),
         ],
       ),
     );
@@ -318,6 +333,8 @@ class _HomePageState extends State<HomePage> {
       await _addEntryPage();
     } else if (option == 'edit') {
       await _editEntryPage();
+    } else if (option == 'fromString') {
+      await _addEntryFromStringPage();
     }
   }
 
