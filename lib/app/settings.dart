@@ -5,7 +5,7 @@ import 'package:path_provider/path_provider.dart';
 class AppSettings {
   int maxAudiosCached = 500;
   bool isFirstRun = true;
-  int sid = 0;
+  int sid = 3;
   late File _file;
   Future<void> initSettings() async {
     final appDir = await getApplicationSupportDirectory();
@@ -19,7 +19,7 @@ class AppSettings {
       final settings = readFile(_file);
       maxAudiosCached = settings['maxAudiosCached'] ?? 500;
       isFirstRun = settings['isFirstRun'] ?? true;
-      sid = settings['sid'] ?? 0;
+      sid = settings['sid'] ?? 3;
     } else {
       saveSettings();
     }

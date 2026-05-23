@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../tools/play_text.dart';
@@ -6,6 +7,7 @@ import '../dict/dict.dart';
 import '../ui/add_entry_page.dart';
 import '../ui/add_dict_page.dart';
 import '../ui/edit_entry_page.dart';
+import 'package:file_picker/file_picker.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -165,6 +167,26 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _importDictPage() async {
+    FilePickerResult? fileResult = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['txt'],
+    );
+    if (fileResult == null) return;
+    if (!mounted) return;
+    File file = File(fileResult.files.single.path!);
+    final String text = await file.readAsString();
+    if (!mounted) return;
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => AddDictPage(text: text)),
+    );
+    if (!context.mounted) return;
+    if (result == true) {
+      setState(() {});
+    }
+  }
+
   void _showDictSelector(BuildContext context) async {
     final dictNames = runtimeData.getDictList();
     final selected = await showDialog<String>(
@@ -277,6 +299,11 @@ class _HomePageState extends State<HomePage> {
         title: const Text('词典管理'),
         children: [
           SimpleDialogOption(
+            child: Text('导入词典'),
+            onPressed: () => Navigator.pop(ctx, 'importDict'),
+          ),
+
+          SimpleDialogOption(
             child: Text('从文本新建'),
             onPressed: () => Navigator.pop(ctx, 'fromString'),
           ),
@@ -296,7 +323,9 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     if (!context.mounted) return;
-    if (option == 'fromString') {
+    if (option == 'importDict') {
+      await _importDictPage();
+    } else if (option == 'fromString') {
       await _dictFromStringPage();
     } else if (option == 'newDict') {
       await _newDictPage();

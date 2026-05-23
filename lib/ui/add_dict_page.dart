@@ -98,15 +98,21 @@ class _AddNewDictPageState extends State<AddNewDictPage> {
 }
 
 class AddDictPage extends StatefulWidget {
-  const AddDictPage({super.key});
+  final String text;
+  const AddDictPage({super.key, this.text = ''});
 
   @override
   State<AddDictPage> createState() => _AddDictPageState();
 }
 
 class _AddDictPageState extends State<AddDictPage> {
-  final _textController = TextEditingController();
+  late final TextEditingController _textController;
   bool _isSaving = false;
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(text: widget.text);
+  }
 
   @override
   void dispose() {
@@ -172,12 +178,14 @@ class _AddDictPageState extends State<AddDictPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextField(
-              controller: _textController,
-              maxLines: null,
-              decoration: const InputDecoration(
-                labelText: '文本',
-                border: OutlineInputBorder(),
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                maxLines: null,
+                decoration: const InputDecoration(
+                  labelText: '文本',
+                  border: OutlineInputBorder(),
+                ),
               ),
             ),
 

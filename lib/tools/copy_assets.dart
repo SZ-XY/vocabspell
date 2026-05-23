@@ -1,8 +1,24 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:archive/archive.dart';
 import '../global.dart';
+import 'package:path/path.dart' as p;
+
+Future<void> _extractModelBytes((Uint8List, String) args) async {
+  final bz2Decoder = BZip2Decoder();
+  final tarBytes = bz2Decoder.decodeBytes(args.$1);
+  final tarArchive = TarDecoder().decodeBytes(tarBytes);
+
+  for (final file in tarArchive.files) {
+    if (file.name.endsWith('/')) continue;
+    final relativePath = file.name.split('/').sublist(1).join('/');
+    if (relativePath.isEmpty) continue;
+    final target = File(p.join(args.$2, relativePath));
+    await target.create(recursive: true);
+    await target.writeAsBytes(file.content);
+  }
+}
 
 Future<void> copyModel() async {
   final modelDir = Directory('$appDocDir/models/kokoro-int8-multi-lang-v1_0');
@@ -14,22 +30,7 @@ Future<void> copyModel() async {
       byteData.offsetInBytes,
       byteData.lengthInBytes,
     );
-
-    final bz2Decoder = BZip2Decoder();
-    final tarBytes = bz2Decoder.decodeBytes(exactBytes);
-    final tarArchive = TarDecoder().decodeBytes(tarBytes);
-
-    for (final file in tarArchive.files) {
-      // 跳过目录和可能的根目录前缀
-      if (file.name.endsWith('/')) continue;
-      final relativePath = file.name.split('/').sublist(1).join('/');
-      if (relativePath.isEmpty) continue;
-
-      final target = File('${modelDir.path}/$relativePath');
-      await target.create(recursive: true);
-      // 基本不会为空
-      await target.writeAsBytes(file.content);
-    }
+    await compute(_extractModelBytes, (exactBytes, modelDir.path));
   }
 }
 
