@@ -1,0 +1,120 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from pubspec.yaml
+        id: extract_version
+        run: |
+          version=$(grep '^version: ' pubspec.yaml | head -1 | awk '{print $2}' | tr -d '\r')
+          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "version=$version"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Download Kokoro INT8 model
+        run: |
+          mkdir -p assets/models
+          wget -O assets/models/kokoro-int8-multi-lang-v1_0.tar.bz2 \
+          https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=../app/upload-keystore.jks" >> android/key.properties
+
+      - name: Build universal APK
+        run: flutter build apk --release
+      - name: Build APK (split per ABI)
+        run: flutter build apk --release --split-per-abi
+
+      - name: Collect and rename APKs
+        run: |
+          mkdir -p release_apks
+
+          cp build/app/outputs/flutter-apk/app-release.apk "release_apks/vocabspell-${VERSION}-universal.apk"
+
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "release_apks/vocabspell-${VERSION}-android-arm64-v8a.apk"
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "release_apks/vocabspell-${VERSION}-android-armeabi-v7a.apk"
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk "release_apks/vocabspell-${VERSION}-android-x86_64.apk"
+
+      - name: Create Release and Upload APKs
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "release_apks/*.apk"
+          tag: v${{ env.VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit: main
+          generateReleaseNotes: true
+  build-arch:
+    name: Build Linux (Arch Package)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract version from pubspec.yaml
+        id: extract_version
+        run: |
+          version=$(grep '^version: ' pubspec.yaml | head -1 | awk '{print $2}' | tr -d '\r')
+          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "version=$version"
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: stable
+          channel: stable
+
+      - name: Install dependencies (system)
+        run: |
+          sudo apt update
+          sudo apt install -y fakeroot dpkg
+
+      - name: Install dart dependencies
+        run: flutter pub get
+
+      - name: Download Kokoro INT8 model
+        run: |
+          mkdir -p assets/models
+          wget -O assets/models/kokoro-int8-multi-lang-v1_0.tar.bz2 \
+          https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2
+
+      - name: Build Linux release binary
+        run: flutter build linux --release
+
+      - name: Build Arch Linux package
+        run: |
+          dart run flutter_to_arch --release
+      - name: Create Release and Upload
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/linux/arch/*.pkg.tar.zst"
+          tag: v${{ env.VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit: main
+          generateReleaseNotes: true

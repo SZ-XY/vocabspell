@@ -79,21 +79,24 @@ class IsolateTts {
     final appDocDir = appDoc.path;
     final appCache = await getApplicationCacheDirectory();
     final appCacheDir = appCache.path;
-    final modelName =
-        '$appDocDir/models/kitten-nano-en-v0_1-fp16/model.fp16.onnx';
-    final dataDir = '$appDocDir/models/kitten-nano-en-v0_1-fp16/espeak-ng-data';
-    final tokens = '$appDocDir/models/kitten-nano-en-v0_1-fp16/tokens.txt';
-    final voices = '$appDocDir/models/kitten-nano-en-v0_1-fp16/voices.bin';
+    final modelDir = p.join(appDocDir, 'models', 'kokoro-int8-multi-lang-v1_0');
+    final modelName = p.join(modelDir, 'model.int8.onnx');
+    final dataDir = p.join(modelDir, 'espeak-ng-data');
+    final tokens = p.join(modelDir, 'tokens.txt');
+    final voices = p.join(modelDir, 'voices.bin');
+    final lexicon =
+        '${p.join(modelDir, 'lexicon-gb-en.txt')},${p.join(modelDir, 'lexicon-us-en.txt')},${p.join(modelDir, 'lexicon-zh.txt')}';
 
-    final kitten = sherpa_onnx.OfflineTtsKittenModelConfig(
+    final kokoro = sherpa_onnx.OfflineTtsKokoroModelConfig(
       model: modelName,
       dataDir: dataDir,
       tokens: tokens,
       voices: voices,
+      lexicon: lexicon,
     );
 
     final modelConfig = sherpa_onnx.OfflineTtsModelConfig(
-      kitten: kitten,
+      kokoro: kokoro,
       numThreads: 2,
       debug: false,
       provider: 'cpu',

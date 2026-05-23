@@ -11,18 +11,18 @@ class LicenseScreen extends StatefulWidget {
 
 class LicenseScreenState extends State<LicenseScreen> {
   List<dynamic>? _licenses;
-  String _kittenLicense =
-      'Copyright KittenML\n\n'
+  String _kokoroLicense =
+      'Copyright hexgrad\n\n'
       'Licensed under the Apache License, Version 2.0\n'
       'http://www.apache.org/licenses/LICENSE-2.0';
 
   Future<void> _loadLicense() async {
     final json = await rootBundle.loadString('assets/licenses.json');
-    final kittenLicense = await rootBundle.loadString('assets/KITTEN_LICENSE');
+    final kokoroLicense = await rootBundle.loadString('assets/KOKORO_LICENSE');
     final data = jsonDecode(json) as List<dynamic>;
     setState(() {
       _licenses = data;
-      _kittenLicense = kittenLicense;
+      _kokoroLicense = kokoroLicense;
     });
   }
 
@@ -43,23 +43,22 @@ class LicenseScreenState extends State<LicenseScreen> {
               itemBuilder: (content, index) {
                 if (index == 0) {
                   return ListTile(
-                    title: Text('Kitten TTS'),
-                    subtitle: Text('0.8'),
+                    title: Text('Kokoro-82M'),
+                    subtitle: Text('1.0'),
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => LicenseDetailPage(
                             license: {
-                              'name': 'KittenML/kitten-tts-nano-0.1',
-                              'version': '0.1',
+                              'name': 'Kokoro-82M',
+                              'version': '1.0',
                               'description':
-                                  'Kitten TTS is an open-source realistic text-to-speech model with just 15 million parameters, designed for lightweight deployment and high-quality voice synthesis.',
-                              'license': _kittenLicense,
+                                  'Kokoro is an open-weight TTS model with 82 million parameters. Despite its lightweight architecture, it delivers comparable quality to larger models while being significantly faster and more cost-efficient. With Apache-licensed weights, Kokoro can be deployed anywhere from production environments to personal projects.',
+                              'license': _kokoroLicense,
                               'homepage':
-                                  'https://huggingface.co/KittenML/kitten-tts-nano-0.1',
-                              'repository':
-                                  'https://github.com/KittenML/KittenTTS',
+                                  'https://huggingface.co/hexgrad/Kokoro-82M',
+                              'repository': 'https://github.com/hexgrad/kokoro',
                               'authors': [],
                             },
                           ),

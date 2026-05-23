@@ -3,6 +3,7 @@ import 'license_page.dart';
 import '../tools/play_text.dart';
 import '../global.dart';
 import '../tools/cache_audio_tools.dart';
+import '../tools/get_voice_name.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -12,22 +13,33 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String _getVoiceName(int sid) {
-    const voices = [
-      'Bella',
-      'Jasper',
-      'Luna',
-      'Bruno',
-      'Rosie',
-      'Hugo',
-      'Kiki',
-      'Leo',
-    ];
-    return (sid >= 0 && sid < voices.length) ? voices[sid] : '未知';
-  }
-
   void _previewVoice() {
     playWord('Hello, this is a test.');
+  }
+
+  Future<void> _showSpeakerSelector(BuildContext context) async {
+    final selectedSid = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('选择音色'),
+        children: List.generate(voices.length, (i) {
+          return SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, i),
+            child: (i == settings.sid)
+                ? Text(voices[i], style: TextStyle(color: Colors.green))
+                : Text(voices[i]),
+          );
+        }),
+      ),
+    );
+
+    if (selectedSid != null && context.mounted) {
+      setState(() {
+        settings.sid = selectedSid;
+        settings.saveSettings();
+        _previewVoice();
+      });
+    }
   }
 
   Future<void> _confirmClearCache(BuildContext context) async {
@@ -78,28 +90,9 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           ListTile(
             title: const Text('当前音色'),
-            subtitle: Text(_getVoiceName(settings.sid)),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Slider(
-              value: settings.sid.toDouble(),
-              min: 0,
-              max: 7,
-              divisions: 7,
-              label: _getVoiceName(settings.sid),
-              onChanged: (value) {
-                setState(() {
-                  settings.sid = value.round();
-                });
-              },
-              onChangeEnd: (value) {
-                settings.sid = value.round();
-                settings.saveSettings();
-                _previewVoice();
-                setState(() {});
-              },
-            ),
+            subtitle: Text(getVoiceName(settings.sid)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _showSpeakerSelector(context),
           ),
           ListTile(
             leading: const Icon(Icons.cleaning_services_outlined),
