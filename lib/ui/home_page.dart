@@ -23,6 +23,8 @@ class _HomePageState extends State<HomePage> {
   bool _isWordCorrect = false; // 提交的答案是否正确(用于判断是否显示释义)
   bool _showDefinition = false; // 是否显示释义
   Entry? _currentEntry;
+  final FocusNode _focusNode = FocusNode();
+  final FocusNode _mainFocusNode = FocusNode();
 
   Future<void> _loadNextWord() async {
     _currentIndex = runtimeData.selectedDict.reviewScheduler.next();
@@ -54,8 +56,24 @@ class _HomePageState extends State<HomePage> {
       _showDefinition = false;
       _textEditingController.clear();
     });
-    // 自动播放新单词的发音
-    await playWord(_currentEntry!.word);
+    if (_currentEntry?.phonetic == '') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _mainFocusNode.requestFocus();
+        }
+      });
+      _isAnswered = true;
+      _isWordCorrect = true;
+      return;
+    } else {
+      // 自动播放新单词的发音并请求焦点
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _focusNode.requestFocus();
+        }
+      });
+      await playWord(_currentEntry?.word ?? '');
+    }
   }
 
   void _advance({bool isWrong = false}) {
@@ -376,6 +394,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _textEditingController.dispose();
+    _focusNode.dispose();
+    _mainFocusNode.dispose();
     super.dispose();
   }
 
@@ -428,79 +448,150 @@ class _HomePageState extends State<HomePage> {
         child: FractionallySizedBox(
           widthFactor: 0.6,
           child: CallbackShortcuts(
-            bindings: {
-              SingleActivator(LogicalKeyboardKey.keyA, control: true): () =>
-                  _advance(),
-              SingleActivator(LogicalKeyboardKey.keyR, control: true): () =>
-                  playWord(_currentEntry?.word ?? ''),
-              SingleActivator(LogicalKeyboardKey.keyM, control: true): () =>
-                  _advance(isWrong: true),
-            },
+            bindings: _shotcuts,
             child: Focus(
+              focusNode: _mainFocusNode,
               autofocus: true,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextField(
-                    readOnly: _isAnswered,
-                    controller: _textEditingController,
-                    onChanged: (text) {
-                      if (_currentEntry == null) {
-                        _loadNextWord();
-                        return;
-                      }
-                      if (text == _currentEntry!.word) {
-                        setState(() {
-                          _isAnswered = true;
-                          _isWordCorrect = true;
-                        });
-                      }
-                    },
-                    textInputAction: TextInputAction.send,
-                    style: TextStyle(fontSize: 32),
-                  ),
-                  const SizedBox(height: 40),
-                  Text(
-                    _isAnswered ? _currentEntry?.phonetic ?? '' : '',
-                    style: TextStyle(fontSize: 24),
-                  ),
-                  const SizedBox(height: 40),
-                  Text(
-                    _showDefinition ? _currentEntry?.definition ?? '' : '',
-                    style: TextStyle(fontSize: 20),
-                  ),
-                  const SizedBox(height: 40),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () => playWord(
-                          (_currentEntry == null) ? '' : _currentEntry!.word,
+                children: (_currentEntry?.phonetic == '')
+                    ? [
+                        Text(
+                          _currentEntry?.definition ?? '',
+                          style: TextStyle(fontSize: 28),
                         ),
-                        child: Icon(Icons.play_arrow, size: 32),
-                      ),
-                      const SizedBox(width: 20),
-                      ElevatedButton(
-                        onPressed: () => _advance(),
-                        child: Icon(Icons.arrow_forward, size: 32),
-                      ),
-                      _showDefinition
-                          ? Padding(
-                              padding: const EdgeInsetsGeometry.only(left: 20),
+                        const SizedBox(height: 60),
+                        Text(
+                          _showDefinition ? _currentEntry?.word ?? '' : '',
+                          style: TextStyle(fontSize: 28),
+                        ),
+                        const SizedBox(height: 60),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Tooltip(
+                              message: '前进\n快捷键: A',
                               child: ElevatedButton(
-                                onPressed: () => _advance(isWrong: true),
-                                child: Icon(Icons.cancel),
+                                onPressed: () => _advance(),
+                                child: Icon(Icons.arrow_forward, size: 32),
                               ),
-                            )
-                          : SizedBox(width: 0),
-                    ],
-                  ),
-                ],
+                            ),
+                            _showDefinition
+                                ? Padding(
+                                    padding: const EdgeInsetsGeometry.only(
+                                      left: 30,
+                                    ),
+                                    child: Tooltip(
+                                      message: '标记为错误\n快捷键: M',
+                                      child: ElevatedButton(
+                                        onPressed: () =>
+                                            _advance(isWrong: true),
+                                        child: Icon(Icons.cancel),
+                                      ),
+                                    ),
+                                  )
+                                : SizedBox(width: 0),
+                          ],
+                        ),
+                      ]
+                    : [
+                        TextField(
+                          focusNode: _focusNode,
+                          readOnly: _isAnswered,
+                          controller: _textEditingController,
+                          onChanged: (text) {
+                            if (_currentEntry == null) {
+                              _loadNextWord();
+                              return;
+                            }
+                            if (text == _currentEntry!.word) {
+                              setState(() {
+                                _isAnswered = true;
+                                _isWordCorrect = true;
+                              });
+                            }
+                          },
+                          textInputAction: TextInputAction.send,
+                          style: TextStyle(fontSize: 32),
+                        ),
+                        const SizedBox(height: 40),
+                        Text(
+                          _isAnswered ? _currentEntry?.phonetic ?? '' : '',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                        const SizedBox(height: 40),
+                        Text(
+                          _showDefinition
+                              ? _currentEntry?.definition ?? ''
+                              : '',
+                          style: TextStyle(fontSize: 20),
+                        ),
+                        const SizedBox(height: 40),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Tooltip(
+                              message: '播放音频\n快捷键: R (输入时 Ctrl+R)',
+                              child: ElevatedButton(
+                                onPressed: () => playWord(
+                                  (_currentEntry == null)
+                                      ? ''
+                                      : _currentEntry!.word,
+                                ),
+                                child: Icon(Icons.play_arrow, size: 32),
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Tooltip(
+                              message: '前进(答错会标记错误)\n快捷键: A (输入时 Ctrl+A)',
+                              child: ElevatedButton(
+                                onPressed: () => _advance(),
+                                child: Icon(Icons.arrow_forward, size: 32),
+                              ),
+                            ),
+                            _showDefinition
+                                ? Padding(
+                                    padding: const EdgeInsetsGeometry.only(
+                                      left: 20,
+                                    ),
+                                    child: Tooltip(
+                                      message: '标记为错误\n快捷键: M (输入时 Ctrl+M)',
+                                      child: ElevatedButton(
+                                        onPressed: () =>
+                                            _advance(isWrong: true),
+                                        child: Icon(Icons.cancel),
+                                      ),
+                                    ),
+                                  )
+                                : SizedBox(width: 0),
+                          ],
+                        ),
+                      ],
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Map<ShortcutActivator, VoidCallback> get _shotcuts {
+    if (_isAnswered) {
+      return {
+        SingleActivator(LogicalKeyboardKey.keyA): () => _advance(),
+        SingleActivator(LogicalKeyboardKey.keyR): () =>
+            playWord(_currentEntry?.word ?? ''),
+        SingleActivator(LogicalKeyboardKey.keyM): () => _advance(isWrong: true),
+      };
+    } else {
+      return {
+        SingleActivator(LogicalKeyboardKey.keyA, control: true): () =>
+            _advance(),
+        SingleActivator(LogicalKeyboardKey.keyR, control: true): () =>
+            playWord(_currentEntry?.word ?? ''),
+        SingleActivator(LogicalKeyboardKey.keyM, control: true): () =>
+            _advance(isWrong: true),
+      };
+    }
   }
 }
