@@ -40,19 +40,18 @@ class ReviewScheduler {
   }
 
   int getInterval(int correctStreak) {
-    // 正确的间隔: 5,10,24,60,80,200,250
-    if (correctStreak == 1) return 5;
-    if (correctStreak == 2) return 10;
-    if (correctStreak == 3) return 24;
-    if (correctStreak == 4) return 60;
-    if (correctStreak == 5) return 80;
-    if (correctStreak == 6) return 200;
-    if (correctStreak == 7) return 250;
-    if (correctStreak > 7) return -1; // -1表示这个单词可以删除了(不再出现)
+    // 正确的间隔: 8,24,60,80,200,280
+    if (correctStreak == 1) return 8;
+    if (correctStreak == 2) return 24;
+    if (correctStreak == 3) return 60;
+    if (correctStreak == 4) return 80;
+    if (correctStreak == 5) return 200;
+    if (correctStreak == 6) return 280;
+    if (correctStreak > 6) return -1; // -1表示这个单词可以删除了(不再出现)
 
     // 错误的间隔 3,1,0
-    if (correctStreak == -1) return 3;
-    if (correctStreak == -2) return 1;
+    if (correctStreak == -1) return 4;
+    if (correctStreak == -2) return 2;
     if (correctStreak <= -3) return 0;
 
     return -2; // 传入0的结果

@@ -90,12 +90,10 @@ class RuntimeData {
 
   void onCorrect() {
     selectedDict.reviewScheduler.onCorrect();
-    selectedDict.saveProgress();
   }
 
   void onMistake() {
     selectedDict.reviewScheduler.onMistake();
-    selectedDict.saveProgress();
   }
 
   void onWordRemoved(int wordIndex) {

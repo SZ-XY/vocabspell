@@ -232,6 +232,7 @@ class Dict {
     }
     await file.writeAsString(buffer.toString());
     runtimeData.dictMap[name] = file;
+    await runtimeData.save();
     return 0;
   }
 

@@ -56,6 +56,8 @@ class _HomePageState extends State<HomePage> {
       _showDefinition = false;
       _textEditingController.clear();
     });
+    runtimeData.selectedDict.saveProgress();
+    print(runtimeData.selectedDict.reviewScheduler.scheduledIndices.toString());
     if (_currentEntry?.phonetic == '') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
