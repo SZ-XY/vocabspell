@@ -1,11 +1,10 @@
-name: Build & Release
+name: Build Release
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-android-release:
-    name: Build and Release
+  build-android:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,20 +27,23 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 'stable'
-          channel: 'stable'
+          channel: stable
+          flutter-version-file: pubspec.yaml
 
       - name: Install dependencies
         run: flutter pub get
+        shell: bash
       - name: Download Kokoro INT8 model
         run: |
           mkdir -p assets/models
           wget -O assets/models/kokoro-int8-multi-lang-v1_0.tar.bz2 \
           https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2
+        shell: bash
 
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+        shell: bash
 
       - name: Create key.properties
         run: |
@@ -49,6 +51,7 @@ jobs:
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=../app/upload-keystore.jks" >> android/key.properties
+        shell: bash
 
       - name: Build universal APK
         run: flutter build apk --release
@@ -77,32 +80,37 @@ jobs:
     name: Build Linux (Arch Package)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Extract version from pubspec.yaml
         id: extract_version
         run: |
           version=$(grep '^version: ' pubspec.yaml | head -1 | awk '{print $2}' | tr -d '\r')
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "version=$version"
+        shell: bash
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: stable
           channel: stable
+          flutter-version-file: pubspec.yaml
 
       - name: Install dependencies (system)
         run: |
           sudo apt update
           sudo apt install -y fakeroot dpkg
+        shell: bash
 
       - name: Install dart dependencies
         run: flutter pub get
+        shell: bash
 
       - name: Download Kokoro INT8 model
         run: |
           mkdir -p assets/models
           wget -O assets/models/kokoro-int8-multi-lang-v1_0.tar.bz2 \
           https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2
+        shell: bash
 
       - name: Build Linux release binary
         run: flutter build linux --release
@@ -118,3 +126,39 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit: main
           generateReleaseNotes: true
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Download Kokoro INT8 model
+        run: |
+          New-Item -ItemType Directory -Force -Path assets/models
+          Invoke-WebRequest -Uri "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2" -OutFile "assets/models/kokoro-int8-multi-lang-v1_0.tar.bz2"
+        shell: pwsh
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      - name: Create ZIP archive
+        run: Compress-Archive -Path "build\windows\x64\runner\Release\*"
+          -DestinationPath "vocabspell_windows_${{ env.VERSION }}.zip"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: vocabspell_windows_*.zip
