@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../dict/review_scheduler.dart';
 import '../tools/file_tools.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -6,6 +7,9 @@ class AppSettings {
   int maxAudiosCached = 500;
   bool isFirstRun = true;
   int sid = 3;
+
+  late IntervalRules intervalRules;
+
   late File _file;
   Future<void> initSettings() async {
     final appDir = await getApplicationSupportDirectory();
@@ -23,6 +27,7 @@ class AppSettings {
     } else {
       saveSettings();
     }
+    intervalRules = IntervalRules.loadFromFile();
   }
 
   void saveSettings() {
@@ -32,5 +37,6 @@ class AppSettings {
       'sid': sid,
     };
     writeFile(settings, _file);
+    intervalRules.save();
   }
 }

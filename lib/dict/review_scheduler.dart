@@ -1,5 +1,7 @@
 import 'dart:io';
 import '../tools/file_tools.dart';
+import '../global.dart';
+import 'package:path/path.dart' as p;
 
 class ReviewScheduler {
   final void Function(int wordIndex) onWordRemoved;
@@ -40,20 +42,19 @@ class ReviewScheduler {
   }
 
   int getInterval(int correctStreak) {
-    // 正确的间隔: 8,24,60,80,200,280
-    if (correctStreak == 1) return 8;
-    if (correctStreak == 2) return 24;
-    if (correctStreak == 3) return 60;
-    if (correctStreak == 4) return 80;
-    if (correctStreak == 5) return 200;
-    if (correctStreak == 6) return 280;
-    if (correctStreak > 6) return -1; // -1表示这个单词可以删除了(不再出现)
-
-    // 错误的间隔 3,1,0
-    if (correctStreak == -1) return 4;
-    if (correctStreak == -2) return 2;
-    if (correctStreak <= -3) return 0;
-
+    if (correctStreak > 0) {
+      if (correctStreak > settings.intervalRules.maxCorrectStreak) {
+        return -1;
+      }
+      return settings.intervalRules.correctIntervals[correctStreak - 1];
+    }
+    if (correctStreak < 0) {
+      final index = -correctStreak - 1;
+      if (index >= settings.intervalRules.maxIncorrectStreak) {
+        return settings.intervalRules.incorrectIntervals.last; // 取最短间隔
+      }
+      return settings.intervalRules.incorrectIntervals[index];
+    }
     return -2; // 传入0的结果
   }
 
@@ -143,5 +144,63 @@ class ReviewScheduler {
   void onCorrect() {
     _t++;
     _insert(true);
+  }
+}
+
+class IntervalRules {
+  List<int> correctIntervals = [8, 24, 60, 80, 200, 300];
+  List<int> incorrectIntervals = [4, 2, 1, 0];
+  int maxCorrectStreak = 6;
+  int maxIncorrectStreak = 4;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'correctIntervals': correctIntervals,
+      'incorrectIntervals': incorrectIntervals,
+    };
+  }
+
+  void save() {
+    final dir = Directory(p.join(appDocDir, 'settings'));
+    if (!dir.existsSync()) dir.createSync(recursive: true);
+    final file = File(p.join(dir.path, 'intervalrules.json'));
+    writeFile(toJson(), file);
+  }
+
+  IntervalRules({
+    required this.correctIntervals,
+    required this.incorrectIntervals,
+  }) : maxCorrectStreak = correctIntervals.length,
+       maxIncorrectStreak = incorrectIntervals.length;
+
+  List<List<int>> getList() => [correctIntervals, incorrectIntervals];
+
+  factory IntervalRules.fromJson(Map<String, dynamic> json) {
+    final correctRaw = json['correctIntervals'] as List? ?? [];
+    final incorrectRaw = json['incorrectIntervals'] as List? ?? [];
+    final correct = correctRaw.cast<int>().toList();
+    final incorrect = incorrectRaw.cast<int>().toList();
+    return IntervalRules(
+      correctIntervals: correct,
+      incorrectIntervals: incorrect,
+    );
+  }
+
+  static IntervalRules loadFromFile() {
+    final file = File(p.join(appDocDir, 'settings', 'intervalrules.json'));
+    if (file.existsSync()) {
+      try {
+        final json = readFile(file);
+        return IntervalRules.fromJson(json);
+      } catch (_) {
+        file.deleteSync();
+      }
+    }
+    final defaultRules = IntervalRules(
+      correctIntervals: [8, 24, 60, 80, 200, 300],
+      incorrectIntervals: [4, 2, 1, 0],
+    );
+    defaultRules.save();
+    return defaultRules;
   }
 }
