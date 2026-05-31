@@ -17,6 +17,7 @@ jobs:
         id: extract_version
         run: |
           version=$(grep '^version: ' pubspec.yaml | head -1 | awk '{print $2}' | tr -d '\r')
+          version=$(echo "$version" | sed 's/+.*//')
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "version=$version"
 
@@ -78,6 +79,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit: main
           generateReleaseNotes: true
+          allowUpdates: true
+
   build-arch:
     name: Build Linux (Arch Package)
     runs-on: ubuntu-latest
@@ -90,6 +93,7 @@ jobs:
         id: extract_version
         run: |
           version=$(grep '^version: ' pubspec.yaml | head -1 | awk '{print $2}' | tr -d '\r')
+          version=$(echo "$version" | sed 's/+.*//')
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "version=$version"
         shell: bash
@@ -135,6 +139,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit: main
           generateReleaseNotes: true
+          allowUpdates: true
   build-windows:
     runs-on: windows-latest
     steps:
@@ -153,6 +158,14 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Extract version from pubspec.yaml
+        shell: pwsh
+        run: |
+          $content = Get-Content pubspec.yaml | Select-String '^version:'
+          $version = $content -replace '^version:\s*', '' -replace '\+.*', ''
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+          Write-Output "Version: $version"
+
       - name: Download Kokoro INT8 model
         run: |
           New-Item -ItemType Directory -Force -Path assets/models
@@ -163,11 +176,16 @@ jobs:
         run: flutter build windows --release
 
       - name: Create ZIP archive
-        run: Compress-Archive -Path "build\windows\x64\runner\Release\*"
-          -DestinationPath "vocabspell_windows_${{ env.VERSION }}.zip"
+        shell: pwsh
+        run: $zipName = "vocabspell_windows_$env:VERSION.zip" Compress-Archive -Path
+          "build\windows\x64\runner\Release\*" -DestinationPath $zipName
 
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+      - name: Create Release and Upload
+        uses: ncipollo/release-action@v1
         with:
-          name: windows-zip
-          path: vocabspell_windows_*.zip
+          artifacts: "vocabspell_windows_${{ env.VERSION }}.zip"
+          tag: v${{ env.VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit: main
+          generateReleaseNotes: true
+          allowUpdates: true
