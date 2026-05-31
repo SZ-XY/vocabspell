@@ -81,8 +81,8 @@ jobs:
           generateReleaseNotes: true
           allowUpdates: true
 
-  build-arch:
-    name: Build Linux (Arch Package)
+  build-linux:
+    name: Build Linux
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -131,10 +131,14 @@ jobs:
       - name: Build Arch Linux package
         run: |
           dart run flutter_to_arch --release
+      - name: Build Debian Linux package
+        run: |
+          dart run flutter_to_debian
+
       - name: Create Release and Upload
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/linux/arch/*.pkg.tar.zst"
+          artifacts: "build/linux/arch/*.pkg.tar.zst,build/linux/x64/release/debian/*.deb"
           tag: v${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
           commit: main
