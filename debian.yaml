@@ -3,3 +3,5 @@ flutter_app:
   arch: x64
   parent: /usr/local/lib
   nonInteractive: false
+excluded_packages:
+  - diversion

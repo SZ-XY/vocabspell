@@ -81,8 +81,8 @@ jobs:
           generateReleaseNotes: true
           allowUpdates: true
 
-  build-arch:
-    name: Build Linux (Arch Package)
+  build-linux:
+    name: Build Linux
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -126,11 +126,17 @@ jobs:
         shell: bash
 
       - name: Build Linux release binary
+        shell: bash
         run: flutter build linux --release
 
       - name: Build Arch Linux package
         run: |
           dart run flutter_to_arch --release
+      #- name: Build Debian Linux package
+      #  shell: bash
+      #  run: |
+      #    dart run flutter_to_debian dependencies
+
       - name: Create Release and Upload
         uses: ncipollo/release-action@v1
         with:
@@ -177,8 +183,9 @@ jobs:
 
       - name: Create ZIP archive
         shell: pwsh
-        run: $zipName = "vocabspell_windows_$env:VERSION.zip" Compress-Archive -Path
-          "build\windows\x64\runner\Release\*" -DestinationPath $zipName
+        run: |
+          $zipName = "vocabspell_windows_$env:VERSION.zip"
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath $zipName
 
       - name: Create Release and Upload
         uses: ncipollo/release-action@v1

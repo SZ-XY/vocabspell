@@ -121,7 +121,7 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 flutter_to_arch:
-  name: vocabspell
+  name: VocabSpell
   icon: assets/app_icon.png
   categories: Utility
   keywords: Flutter;Education;Utility;

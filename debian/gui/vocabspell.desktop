@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.1.0
+Name=VocabSpell
+GenericName=VocabSpell
+Comment=一个帮助你背单词的离线TTS闪卡应用
+Terminal=false
+Type=Application
+Categories=Utility;
+Keywords=Flutter;Education;Utility;
+Icon=vocabspell
