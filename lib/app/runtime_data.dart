@@ -50,11 +50,11 @@ class RuntimeData {
       selectedDict = await Dict.fromFile(exampleFile, onWordRemoved);
       dictMap = {selectedDict.name: exampleFile};
       selectedDict.loadProgress();
-      await save();
+      save();
     }
   }
 
-  Future<void> save() async {
+  void save() {
     final json = _toJson();
     writeFile(json, _file);
   }
@@ -68,7 +68,7 @@ class RuntimeData {
         selectedDict.saveProgress();
         selectedDict = await Dict.fromFile(file, onWordRemoved);
         selectedDict.loadProgress();
-        await save();
+        save();
       }
     }
   }
@@ -99,5 +99,14 @@ class RuntimeData {
   void onWordRemoved(int wordIndex) {
     final word = selectedDict.content[wordIndex].word;
     rmAudioCache(word);
+  }
+
+  /// 使当前单词不再出现
+  Entry? rmWord() {
+    if (selectedDict.reviewScheduler.scheduledIndices.isEmpty) return null;
+    final wordIndex = selectedDict.reviewScheduler.rmWord();
+    final entry = selectedDict.content[wordIndex];
+    return entry;
+    // selectedDict.saveProgress();需要使用后立即加载下一个
   }
 }

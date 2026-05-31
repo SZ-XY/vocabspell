@@ -232,19 +232,21 @@ class Dict {
     }
     await file.writeAsString(buffer.toString());
     runtimeData.dictMap[name] = file;
-    await runtimeData.save();
+    runtimeData.save();
     return 0;
   }
 
   static void deleteDict(String name) {
     final file = runtimeData.dictMap[name];
-    if (file == null || !file.existsSync()) return;
-    file.deleteSync();
+    if (file != null) {
+      runtimeData.dictMap.remove(name);
+      runtimeData.save();
+      if (file.existsSync()) file.deleteSync();
+    }
     final progress = File(p.join(appDocDir, 'dicts', '${name.safeName}.json'));
     if (progress.existsSync()) {
       progress.deleteSync();
     }
-    runtimeData.dictMap.remove(name);
   }
 }
 

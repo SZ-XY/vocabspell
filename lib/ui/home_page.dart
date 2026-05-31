@@ -123,6 +123,26 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _rmWord() {
+    final rmEntry = runtimeData.rmWord();
+    if (rmEntry == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('当前没有单词/词组')));
+    } else {
+      if (rmEntry.phonetic == '') {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('忽略词组: ${rmEntry.definition}')));
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('忽略单词: ${rmEntry.word}')));
+      }
+    }
+    _loadNextWord();
+  }
+
   Future<void> _addEntryPage() async {
     final result = await Navigator.push<bool>(
       context,
@@ -374,6 +394,15 @@ class _HomePageState extends State<HomePage> {
             child: Text('从文本新建'),
             onPressed: () => Navigator.pop(ctx, 'fromString'),
           ),
+          if (_currentEntry != null)
+            SimpleDialogOption(
+              child: Text(
+                (_currentEntry?.phonetic == '')
+                    ? '忽略当前词组: ${_currentEntry!.definition}\n快捷键: Ctrl+T'
+                    : '忽略当前单词: ${_currentEntry!.word} (快捷键:Ctrl+T)',
+              ),
+              onPressed: () => Navigator.pop(ctx, 'rmWord'),
+            ),
         ],
       ),
     );
@@ -384,6 +413,8 @@ class _HomePageState extends State<HomePage> {
       await _editEntryPage();
     } else if (option == 'fromString') {
       await _addEntryFromStringPage();
+    } else if (option == 'rmWord') {
+      _rmWord();
     }
   }
 
@@ -472,7 +503,7 @@ class _HomePageState extends State<HomePage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Tooltip(
-                              message: '前进\n快捷键: A',
+                              message: '前进\n快捷键: J',
                               child: ElevatedButton(
                                 onPressed: () => _advance(),
                                 child: Icon(Icons.arrow_forward, size: 32),
@@ -545,7 +576,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                             const SizedBox(width: 20),
                             Tooltip(
-                              message: '前进(答错会标记错误)\n快捷键: A (输入时 Ctrl+A)',
+                              message: '前进(答错会标记错误)\n快捷键: J (输入时 Ctrl+J)',
                               child: ElevatedButton(
                                 onPressed: () => _advance(),
                                 child: Icon(Icons.arrow_forward, size: 32),
@@ -580,19 +611,23 @@ class _HomePageState extends State<HomePage> {
   Map<ShortcutActivator, VoidCallback> get _shotcuts {
     if (_isAnswered) {
       return {
-        SingleActivator(LogicalKeyboardKey.keyA): () => _advance(),
+        SingleActivator(LogicalKeyboardKey.keyJ): () => _advance(),
         SingleActivator(LogicalKeyboardKey.keyR): () =>
             playWord(_currentEntry?.word ?? ''),
         SingleActivator(LogicalKeyboardKey.keyM): () => _advance(isWrong: true),
+        SingleActivator(LogicalKeyboardKey.keyT, control: true): () =>
+            _rmWord(),
       };
     } else {
       return {
-        SingleActivator(LogicalKeyboardKey.keyA, control: true): () =>
+        SingleActivator(LogicalKeyboardKey.keyJ, control: true): () =>
             _advance(),
         SingleActivator(LogicalKeyboardKey.keyR, control: true): () =>
             playWord(_currentEntry?.word ?? ''),
         SingleActivator(LogicalKeyboardKey.keyM, control: true): () =>
             _advance(isWrong: true),
+        SingleActivator(LogicalKeyboardKey.keyT, control: true): () =>
+            _rmWord(),
       };
     }
   }

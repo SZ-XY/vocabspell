@@ -145,6 +145,14 @@ class ReviewScheduler {
     _t++;
     _insert(true);
   }
+
+  int rmWord() {
+    final wordIndex = scheduledIndices[0].$3;
+    _t++;
+    scheduledIndices.removeAt(0);
+    onWordRemoved(wordIndex);
+    return wordIndex;
+  }
 }
 
 class IntervalRules {
