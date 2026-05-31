@@ -5,9 +5,9 @@ description: "一个帮助你背单词的离线TTS闪卡应用"
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 license: Apache-2.0
-homepage: https://github.com/SZ-XY/vocabspell
-repository: https://github.com/SZ-XY/vocabspell
-issue_tracker: https://github.com/SZ-XY/vocabspell/issues
+homepage: https://github.com/Suryune/vocabspell
+repository: https://github.com/Suryune/vocabspell
+issue_tracker: https://github.com/Suryune/vocabspell/issues
 
 # The following definestheversion and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -125,6 +125,6 @@ flutter_to_arch:
   icon: assets/app_icon.png
   categories: Utility
   keywords: Flutter;Education;Utility;
-  url: https://github.com/SZ-XY/vocabspell
+  url: https://github.com/Suryune/vocabspell
   depends:
     - gtk3
